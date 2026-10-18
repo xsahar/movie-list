@@ -26,12 +26,77 @@ class _MovieListScreenState extends State<MovieListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Movie List')),
+      appBar: AppBar(
+        titleSpacing: 20,
+        title: Row(
+          children: [
+            Icon(Icons.local_movies_rounded, color: colors.primary),
+            const SizedBox(width: 10),
+            const Text(
+              'Movie List',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [colors.primary, const Color(0xFF9F3E36)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: colors.primary.withValues(alpha: 0.2),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'YOUR MOVIE NIGHT STARTS HERE',
+                    style: TextStyle(
+                      color: Color(0xFFFFD8A8),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Find your next favorite film.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 27,
+                      height: 1.12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Browse the collection, sorted by rating.',
+                    style: TextStyle(color: Color(0xFFFCE8DF), fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: TextField(
               decoration: InputDecoration(
                 labelText: 'Search movies',
@@ -43,7 +108,21 @@ class _MovieListScreenState extends State<MovieListScreen> {
                         onPressed: () => setState(() => _searchText = ''),
                         icon: const Icon(Icons.clear),
                       ),
-                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 17),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: colors.outlineVariant),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: colors.outlineVariant),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: colors.primary, width: 1.5),
+                ),
               ),
               onChanged: (value) => setState(() => _searchText = value),
             ),
@@ -74,22 +153,53 @@ class _MovieListScreenState extends State<MovieListScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  itemCount: movies.length,
-                  itemBuilder: (context, index) {
-                    final movie = movies[index];
-                    return MovieCard(
-                      movie: movie,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => MovieDetailsScreen(movie: movie),
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'Top rated',
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        );
-                      },
-                    );
-                  },
+                          const Spacer(),
+                          Text(
+                            '${movies.length} FILMS',
+                            style: TextStyle(
+                              color: colors.secondary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                        itemCount: movies.length,
+                        itemBuilder: (context, index) {
+                          final movie = movies[index];
+                          return MovieCard(
+                            movie: movie,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      MovieDetailsScreen(movie: movie),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

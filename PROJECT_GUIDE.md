@@ -1,107 +1,140 @@
 # Movie List Project Guide
 
-## What we are building
+## Project overview
 
-A small Flutter app that reads movie information from `assets/movies.json`. It
-will show the highest-rated movies first, let people search by movie name, and
-open a page with more information when a movie is tapped.
+Movie List is a Flutter app that reads movie records from `assets/movies.json`.
+It displays the movies in descending IMDb-rating order, lets the user search
+titles, and opens a page with more information when a movie is selected.
 
-The JSON file is already in the `assets` folder and is listed in
-`pubspec.yaml`. Flutter bundles it with the app; it is not downloaded from the
-internet when the app runs. Movie poster pictures use web addresses in the JSON,
-so displaying those pictures requires an internet connection.
+The JSON file is bundled with the app through the asset entry in
+`pubspec.yaml`. The movie data is available offline, but poster URLs point to
+the internet, so posters need a network connection.
 
-## The idea in plain English
+The interface uses a warm, light background with terracotta accents, amber
+rating badges, and rounded movie cards. The list screen has a colorful welcome
+banner, while the details screen gives the poster and plot their own visual
+sections.
 
-- **JSON file:** the collection of movie facts, stored as text.
-- **Movie model:** a Dart class that gives each movie's facts clear names and
-  types.
-- **Data loader:** reads the bundled JSON file and turns its text into Movie
-  objects.
-- **Screens:** Flutter widgets that show the movie list and movie details.
-- **Search:** filters the list by movie title without caring about uppercase or
-  lowercase letters.
-
-## How the parts connect
+## How the data becomes a screen
 
 ```text
 assets/movies.json
-        |
-        v
-Data loader reads and decodes the JSON
-        |
-        v
-Movie model objects
-        |
-        v
-Home screen: sort by rating -> search by title -> show movie list
-        |
-        | tap a movie
-        v
-Movie details screen
+       |
+       v
+MovieRepository reads and decodes the JSON
+       |
+       v
+Movie.fromJson creates a Movie object for each record
+       |
+       v
+MovieListScreen sorts/displays the movies and filters search results
+       |
+       | user taps a movie
+       v
+MovieDetailsScreen displays that Movie's information
 ```
 
-## Build it step by step
+Each movie is written once in the JSON data file, not as a Dart object in the
+app code. The Dart model describes the shape of one movie. At runtime, the
+repository converts every JSON record into an object of that model, and the
+screens display the object fields they need.
 
-1. **Keep the movie data available**
-   - The file is at `assets/movies.json`.
-   - `pubspec.yaml` must list `assets/movies.json` under `flutter` > `assets`.
-   - If the asset list changes, run `flutter pub get`.
+## JSON-to-Dart conversion
 
-2. **Create a Movie model**
-   - Add fields for the movie information the app needs, such as title, year,
-     genre, rating, poster, actors, director, and plot.
-   - Add a `fromJson` method to create a Movie from one JSON object.
-   - JSON keys use names such as `Title` and `imdbRating`; match those exact
-     names when reading the data.
+[JSON to Dart](https://jsontodart.com/) was used to generate a starting model
+from a movie object in `assets/movies.json`. Converting JSON to Dart is useful
+because it generates the class fields and JSON-key mappings, avoiding
+handwriting every mapping. The generated output still needs review: a converter
+does not know which properties the app uses or what types the rest of the code
+expects.
 
-3. **Load the movies**
-   - Read `assets/movies.json` with Flutter's asset loader.
-   - Decode the JSON text and convert each item into a Movie.
-   - Keep loading asynchronous because reading an asset takes time.
+The generated model for this project was adjusted to fit the app:
 
-4. **Build the home screen**
-   - Show a search box and a scrollable list of movies.
-   - Sort movies by their numeric IMDb rating, highest first.
-   - Each list item should show its poster, title, and genre.
-   - Search the title case-insensitively, so `vatar` can find `Avatar`.
+- The generated class was named `movies`; the app expects `Movie`, following
+  Dart's capitalized class-name convention.
+- The app expects the factory constructor `Movie.fromJson(...)`, which
+  `MovieRepository` calls for each JSON record.
+- The generated `imdbRating` was a `String`. The app sorts and displays ratings
+  numerically, so the model uses a `double`.
+- Optional text fields have safe defaults so screen code can use them without
+  nullable-value checks everywhere.
+- The JSON property names retain their exact spelling and capitalization.
+  For example, `json['Title']` is assigned to the Dart field `title`.
+- The generated `toJson` method and fields not used by the current screens are
+  not needed for this read-only app. They can be added later if the app needs
+  to write movie records or show those properties.
 
-5. **Build the details screen**
-   - Open it when someone taps a movie.
-   - Show the movie title in the app bar and provide normal back navigation.
-   - Show the poster and at least five useful details, for example year,
-     rating, runtime, genre, director, actors, and plot.
-   - Make the page scroll so its content does not overflow a small screen.
+One record contains `"imdbRating": "N/A"`. The current model converts a rating
+that cannot be parsed into `0`, which causes that movie to show as `0.0` and
+sort to the bottom. This is a fallback, not the movie's actual rating.
 
-6. **Handle loading and errors**
-   - Show a loading indicator while the file is being read.
-   - Show a clear error message if the file cannot be read or decoded.
-   - Use a placeholder if a poster image cannot load.
+## Main project files
 
-7. **Run and check the app**
-   - Run `flutter pub get`, then start the app on an emulator or device.
-   - Check that ratings are in descending order, search ignores letter case,
-     tapping opens the correct details, and both screens fit on small screens.
+| File | Purpose |
+|---|---|
+| `assets/movies.json` | Source data: a list of movie records and their properties. |
+| `pubspec.yaml` | Declares Flutter settings and includes `assets/movies.json` in the app bundle. |
+| `lib/main.dart` | Starts the app, configures its warm color theme, and opens the movie list screen. |
+| `lib/models/movie.dart` | Defines the `Movie` data model and maps JSON values to Dart fields. |
+| `lib/services/movie_repository.dart` | Loads and decodes the asset, creates movie objects, and sorts by rating. |
+| `lib/screens/movie_list_screen.dart` | Shows the home screen, search box, loading/error states, and movie list. |
+| `lib/screens/movie_details_screen.dart` | Shows the selected movie's poster and available details. |
+| `lib/widgets/movie_card.dart` | Reusable list item showing a poster, title, genre, and rating. |
+| `lib/widgets/movie_poster.dart` | Loads a poster from its URL or shows a placeholder if it is missing or fails to load. |
+| `test/movie_repository_test.dart` | Checks that the JSON loads and ratings are sorted from high to low. |
+| `test/widget_test.dart` | Checks rating order, case-insensitive search, and opening movie details. |
 
-## Where the project is now
+## Important concepts in the implementation
 
-The app is now split into small, focused files:
+### Asynchronous loading
+
+Reading an asset takes time, so `MovieRepository.loadMovies()` returns a
+`Future<List<Movie>>`. The list screen uses `FutureBuilder` to show a loading
+indicator while the future is unfinished, an error message if it fails, and
+the list when data is ready.
+
+### Sorting and unrated values
+
+The repository sorts the parsed numeric ratings from highest to lowest before
+returning them. Since `"N/A"` is currently converted to `0`, it appears below
+movies with a real rating.
+
+### ILIKE-style title search
+
+The case-insensitive partial search is in
+`lib/screens/movie_list_screen.dart`. It trims the search text, converts both
+the search and each movie title to lowercase, and uses `contains()`:
+
+```dart
+final query = _searchText.trim().toLowerCase();
+final movies = snapshot.data!
+    .where((movie) => movie.title.toLowerCase().contains(query))
+    .toList();
+```
+
+For example, searching for `vAtAr` matches `Avatar`. This is similar to SQL
+`ILIKE '%query%'`, but it filters the in-memory Dart list; it does not use a
+database.
+
+### Screens, navigation, and scrolling
+
+The home screen creates a movie card for each result. Tapping a card pushes a
+details screen and passes the selected `Movie` object to it. The details page
+uses a scrollable list so longer descriptions can fit on smaller screens.
+Flutter's normal route behavior provides back navigation.
+
+## Running and checking the app
+
+From the project folder:
 
 ```text
-lib/
-  main.dart                    Starts the app and sets its theme
-  models/movie.dart            Describes a movie and reads its JSON fields
-  services/movie_repository.dart Loads and sorts the bundled movie data
-  screens/
-    movie_list_screen.dart     Shows, searches, and opens the movie list
-    movie_details_screen.dart  Shows information about one selected movie
-  widgets/
-    movie_card.dart            Reusable row for one movie
-    movie_poster.dart          Shows a poster or a fallback icon
-test/
-  movie_repository_test.dart   Checks that movie data loads in rating order
-  widget_test.dart             Checks searching and opening movie details
+flutter pub get
+flutter run
 ```
 
-The movie JSON asset is registered in `pubspec.yaml`. The list, case-insensitive
-search, rating order, movie detail page, and poster fallback are implemented.
+To run the automated checks:
+
+```text
+flutter analyze
+flutter test
+```
